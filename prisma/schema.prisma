@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String    @id @default(auto()) @map("_id") @db.ObjectId
+  email             String    @unique
+  hashedPassword    String
+  name              String
+  profile           Profile?
+  posts             Post[]
+  comments          Comment[]
+  likes             Like[]
+  friends           User[]    @relation("UserFollows", fields: [friendsIds], references: [id])
+  friendsIds        String[]  @db.ObjectId
+  friendOf          User[]    @relation("UserFollows", fields: [friendOfIds], references: [id])
+  friendOfIds       String[]  @db.ObjectId
+  sentNotifications          Notification[] @relation("author")
+  notifications              Notification[] @relation("recipient")
+  friendAddedNotifications   Notification[] @relation("friend")
+}
+
+model Profile {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  location    String?
+  job         String?
+  education   String?
+  bio         String?
+  image       String?
+  cover       String?
+  photos      String[]
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String   @db.ObjectId @unique
+}
+
+model Post {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  content     String
+  postImage   String?
+  comments    Comment[]
+  likes       Like[]
+  createdAt   DateTime  @default(now())
+  author      User      @relation(fields: [authorId], references: [id])
+  authorId    String    @db.ObjectId
+  notifications Notification[]
+}
+
+model Comment {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  content   String
+  createdAt DateTime @default(now())
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  String   @db.ObjectId
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    String   @db.ObjectId
+  notifications Notification[]
+}
+
+model Like {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  author    User      @relation(fields: [authorId], references: [id])
+  authorId  String    @db.ObjectId
+  post      Post?     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    String?   @db.ObjectId
+  notifications Notification[]
+}
+
+model Notification {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  content   String
+  createdAt DateTime  @default(now())
+  author    User      @relation("author", fields: [authorId], references: [id])
+  authorId  String    @db.ObjectId
+  recipient  User      @relation("recipient", fields: [recipientId], references: [id])
+  recipientId String   @db.ObjectId
+  post      Post?     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    String?   @db.ObjectId
+  comment   Comment?  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  commentId String?   @db.ObjectId
+  like      Like?     @relation(fields: [likeId], references: [id], onDelete: Cascade)
+  likeId    String?   @db.ObjectId
+  friend    User?     @relation("friend", fields: [friendId], references: [id], onDelete: Cascade)
+  friendId  String?   @db.ObjectId
+}
